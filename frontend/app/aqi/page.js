@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api, { getCities, getCityAQI, getCityAQILatest, getSmartAnalysis } from '@/lib/api';
 import Navbar from '@/components/Navbar';
@@ -10,7 +10,7 @@ import {
   ReferenceLine, CartesianGrid, ResponsiveContainer, Legend,
 } from 'recharts';
 
-export default function AQIPage() {
+function AQIPageContent() {
   const [cities, setCities] = useState([]);
   const [selectedCity, setSelectedCity] = useState('');
   const [cityData, setCityData] = useState(null);
@@ -751,5 +751,17 @@ export default function AQIPage() {
         )}
       </div>
     </div >
+  );
+}
+
+export default function AQIPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <AQIPageContent />
+    </Suspense>
   );
 }
