@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 # Load .env from backend root directory
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env'))
-API_KEY = ("255ff4877771d3eba23707c7fd9431e3")
+API_KEY = os.getenv("OPENWEATHER_API_KEY")
 
 _cache = {}
 _cache_ttl = 1800  # 30 minutes

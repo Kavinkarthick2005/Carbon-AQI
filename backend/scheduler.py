@@ -6,9 +6,10 @@ from services.live_aqi import fetch_live_aqi, CITY_COORDS
 from database import SessionLocal
 from models import City, AirQualityData, AQIHistory
 from ml.predict import predict_aqi_risk
-import httpx
+from dotenv import load_dotenv
 
-KEY = "255ff4877771d3eba23707c7fd9431e3"
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
+KEY = os.getenv("OPENWEATHER_API_KEY")
 
 async def refresh_all_cities():
     print("Auto-refreshing live AQI data...")
