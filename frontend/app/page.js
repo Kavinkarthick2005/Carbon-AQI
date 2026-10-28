@@ -33,7 +33,7 @@ export default function Home() {
         // Ignore the error if the user intentionally closed the popup
         return;
       }
-      setError('Failed to sign in with Google');
+      setError(`Google Sign-In Error: ${error.message}`);
       console.error(error);
     } finally {
       setLoading(false);
