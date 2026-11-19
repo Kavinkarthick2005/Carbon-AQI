@@ -7,25 +7,13 @@ import uuid
 from database import get_db
 from models import Feedback, User
 from schemas import FeedbackCreate, FeedbackResponse
-from routers.auth import verify_firebase_token, get_or_create_user
+from routers.auth import verify_firebase_token, get_current_user, check_admin_role, require_admin_user
 
 router = APIRouter()
 
 
 class StatusUpdate(BaseModel):
     status: str  # open | in_review | resolved | rejected
-
-def check_admin_role(token_data: dict, db: Session) -> User:
-    """Helper function to check if user has admin role"""
-    firebase_uid = token_data.get('uid')
-    user = db.query(User).filter(User.firebase_uid == firebase_uid).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    if user.role != 'admin':
-        raise HTTPException(status_code=403, detail="Admin access required")
-    
-    return user
 
 @router.post("/submit", response_model=FeedbackResponse)
 async def submit_feedback(
@@ -35,7 +23,7 @@ async def submit_feedback(
 ):
     """Submit new feedback"""
     
-    user = get_or_create_user(token_data, db)
+    user = get_current_user(token_data, db)
     
     # Create new feedback
     new_feedback = Feedback(
@@ -63,7 +51,7 @@ async def get_my_feedback(
 ):
     """Get all feedback submitted by current user"""
     
-    user = get_or_create_user(token_data, db)
+    user = get_current_user(token_data, db)
     
     # Get user's feedback
     feedback_list = db.query(Feedback)\

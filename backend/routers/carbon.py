@@ -7,7 +7,7 @@ from datetime import datetime
 from database import get_db
 from models import CarbonFootprint, User
 from schemas import CarbonInput, CarbonResponse
-from routers.auth import verify_firebase_token, get_or_create_user
+from routers.auth import verify_firebase_token, get_current_user
 
 # Emission factors (hardcoded constants)
 TRANSPORT_FACTORS = {
@@ -56,7 +56,7 @@ async def calculate_carbon_footprint(
     diet_emission = round(DIET_FACTORS[carbon_data.diet_type] * 30, 2)  # monthly
     total_emission = round(transport_emission + energy_emission + diet_emission, 2)
     
-    user = get_or_create_user(token_data, db)
+    user = get_current_user(token_data, db)
     
     # Save to database
     new_footprint = CarbonFootprint(
@@ -86,7 +86,7 @@ async def get_carbon_history(
 ):
     """Get last 10 carbon footprint records for authenticated user"""
     
-    user = get_or_create_user(token_data, db)
+    user = get_current_user(token_data, db)
     
     # Get last 10 records
     records = db.query(CarbonFootprint)\

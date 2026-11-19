@@ -1,22 +1,26 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from database import engine, Base
+from database import engine, Base, init_db
+from config import get_settings
 import uvicorn
 
 # Import routers
 from routers import auth, aqi, carbon, cities, ml_predict, rl_strategy, chatbot, feedback, translation, leaderboard, alerts
 
+# Load centralized settings
+settings = get_settings()
+
 # Create FastAPI app
 app = FastAPI(title="Carbon AQI API", version="1.0")
 
-# Add CORS middleware
+# Add CORS middleware with explicit origin, method, header, and credential constraints
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
+    allow_methods=settings.CORS_ALLOW_METHODS,
+    allow_headers=settings.CORS_ALLOW_HEADERS,
 )
 
 # Include routers
@@ -32,11 +36,11 @@ app.include_router(translation.router, prefix="/api/translation", tags=["transla
 app.include_router(leaderboard.router, prefix="/api/leaderboard", tags=["leaderboard"])
 app.include_router(alerts.router, prefix="/api/alerts", tags=["alerts"])
 
-# Startup event to create tables
+# Startup event to create tables (explicit callable; import-time DDL eliminated)
 @app.on_event("startup")
 async def startup_event():
-    # Create all database tables
-    Base.metadata.create_all(bind=engine)
+    # Explicit database initialization during application startup
+    init_db()
 
 # Root endpoint
 @app.get("/")

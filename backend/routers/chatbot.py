@@ -10,10 +10,11 @@ from database import get_db
 from models import ChatbotLog, User
 from schemas import ChatbotRequest, ChatbotResponse
 from routers.auth import verify_firebase_token
+from config import get_settings
 
 router = APIRouter()
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_API_KEY = get_settings().GROQ_API_KEY
 
 SYSTEM_PROMPT = """You are an AI assistant for the Carbon AQI Monitoring System,
 a platform tracking air quality across 10 Indian cities: Mumbai, Delhi, Bangalore,

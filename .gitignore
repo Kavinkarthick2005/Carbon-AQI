@@ -49,3 +49,7 @@ Thumbs.db
 # IDE settings
 .vscode/
 .idea/
+
+# Research and Raw Archive Data
+research-data/
+

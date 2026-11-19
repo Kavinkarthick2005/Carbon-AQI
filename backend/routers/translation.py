@@ -1,37 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import text, Column, String, Text, TIMESTAMP
-from sqlalchemy.dialects.postgresql import UUID
 from typing import Dict, Any, List
 import uuid
 
-from database import get_db, engine, Base
-from models import User
-from routers.auth import verify_firebase_token
-
-# Create Translation model if not exists
-class Translation(Base):
-    __tablename__ = "translations"
-    
-    translation_id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
-    key_name = Column(String(100), nullable=False, index=True)
-    language_code = Column(String(10), nullable=False, index=True)
-    translated_text = Column(Text, nullable=False)
-    created_at = Column(TIMESTAMP, server_default=text("NOW()"))
+from database import get_db
+from models import User, Translation
+from routers.auth import verify_firebase_token, check_admin_role, require_admin_user
 
 router = APIRouter()
-
-def check_admin_role(token_data: dict, db: Session) -> User:
-    """Helper function to check if user has admin role"""
-    firebase_uid = token_data.get('uid')
-    user = db.query(User).filter(User.firebase_uid == firebase_uid).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    if user.role != 'admin':
-        raise HTTPException(status_code=403, detail="Admin access required")
-    
-    return user
 
 def seed_translations(db: Session):
     """Seed basic translations for English and Tamil"""

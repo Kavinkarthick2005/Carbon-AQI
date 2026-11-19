@@ -7,7 +7,7 @@ import uuid
 from database import get_db
 from models import City, AirQualityData, MLPrediction, CityComparison, User
 from schemas import CityResponse
-from routers.auth import verify_firebase_token, get_or_create_user
+from routers.auth import verify_firebase_token, get_current_user
 
 router = APIRouter()
 
@@ -99,7 +99,7 @@ async def compare_cities(
     }
     
     # Save comparison to database
-    user = get_or_create_user(token_data, db)
+    user = get_current_user(token_data, db)
     
     comparison = CityComparison(
         user_id=user.user_id,

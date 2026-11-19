@@ -67,6 +67,10 @@ function AQIPageContent() {
     setDismissedAlerts(new Set());
     try {
       const response = await getSmartAnalysis(cityId);
+      let latestRecord = null;
+      try {
+        latestRecord = await getCityAQILatest(cityId);
+      } catch (_) { /* ignore if not available */ }
 
       // Map city / pollutant data shape the rest of the page expects
       setCityData({
@@ -79,7 +83,7 @@ function AQIPageContent() {
         o3:         response.o3 ?? response.forecast?.forecast?.[0]?.o3    ?? null,
         co:         response.co ?? response.forecast?.forecast?.[0]?.co    ?? null,
         // keep a reference to the full raw response for any downstream use
-        _raw: response,
+        _raw: { ...response, ...(latestRecord || {}) },
       });
 
       // ML prediction block
@@ -347,8 +351,8 @@ function AQIPageContent() {
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-6xl font-black text-white">{cityData.aqi_score}</span>
-                  <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Points</span>
+                  <span className="text-6xl font-black text-white">{cityData.aqi_score != null ? cityData.aqi_score : 'N/A'}</span>
+                  <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">{cityData.aqi_score != null ? 'Points' : 'Unavailable'}</span>
                 </div>
               </div>
 
@@ -369,6 +373,27 @@ function AQIPageContent() {
                   <span className="text-gray-500 font-bold text-xs uppercase tracking-widest bg-gray-800/50 px-3 py-1.5 rounded-full">
                     Station ID: #00{selectedCity}
                   </span>
+                  {cityData._raw?.is_cpcb_compliant === true ? (
+                    <span className="text-emerald-400 font-bold text-xs uppercase tracking-widest bg-emerald-950/40 border border-emerald-800/40 px-3 py-1.5 rounded-full">
+                      CPCB Compliant
+                    </span>
+                  ) : cityData._raw?.calculation_type === 'manual_submission' ? (
+                    <span className="text-blue-400 font-bold text-xs uppercase tracking-widest bg-blue-950/40 border border-blue-800/40 px-3 py-1.5 rounded-full">
+                      User-Declared Manual Submission
+                    </span>
+                  ) : (cityData._raw?.calculation_type === 'instantaneous_estimate' || cityData._raw?.calculation_type === 'application_streaming_estimate') ? (
+                    <span className="text-amber-400 font-bold text-xs uppercase tracking-widest bg-amber-950/40 border border-amber-800/40 px-3 py-1.5 rounded-full">
+                      Streaming / Indicative Estimate (Non-CPCB)
+                    </span>
+                  ) : cityData._raw?.calculation_status === 'unverified' ? (
+                    <span className="text-blue-400 font-bold text-xs uppercase tracking-widest bg-blue-950/40 border border-blue-800/40 px-3 py-1.5 rounded-full">
+                      Unverified Submission
+                    </span>
+                  ) : (cityData._raw?.calculation_status === 'insufficient_data' || cityData.aqi_score == null) ? (
+                    <span className="text-red-400 font-bold text-xs uppercase tracking-widest bg-red-950/40 border border-red-800/40 px-3 py-1.5 rounded-full">
+                      Data Inadequate / Insufficient
+                    </span>
+                  ) : null}
                 </div>
 
                 <div className="bg-[#1f2937]/50 rounded-2xl p-6 border border-gray-700/50 inline-block">
@@ -379,8 +404,17 @@ function AQIPageContent() {
                       </svg>
                     </div>
                     <div>
-                      <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Last Sync Time</div>
-                      <div className="text-sm font-bold text-white tabular-nums">{currentTime}</div>
+                      <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-0.5">
+                        {cityData._raw?.observation_time ? 'Observation Time (Source)' : 'Observation Time'}
+                      </div>
+                      <div className="text-sm font-bold text-white tabular-nums">
+                        {cityData._raw?.observation_time
+                          ? new Date(cityData._raw.observation_time).toLocaleString()
+                          : <span className="text-amber-400/80">Unknown / Not Provided</span>}
+                      </div>
+                      <div className="text-[9px] text-gray-500 mt-0.5">
+                        Client Sync: {currentTime}
+                      </div>
                     </div>
                   </div>
                 </div>

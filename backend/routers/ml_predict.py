@@ -99,6 +99,7 @@ from services.live_aqi import fetch_live_aqi
 async def smart_analysis(
     city_id: str,
     db: Session = Depends(get_db),
+    _token_data: dict = Depends(verify_firebase_token),
 ):
     """
     Orchestrates XGBoost forecast + enhanced RL strategy + alert evaluation
@@ -152,12 +153,9 @@ async def smart_analysis(
     try:
         live = await fetch_live_aqi(city.city_name)
         if live:
-            current_data["pm25"] = live.get("pm25") or current_data["pm25"]
-            current_data["pm10"] = live.get("pm10") or current_data["pm10"]
-            current_data["no2"]  = live.get("no2")  or current_data["no2"]
-            current_data["co"]   = live.get("co")   or current_data["co"]
-            current_data["so2"]  = live.get("so2")  or current_data["so2"]
-            current_data["o3"]   = live.get("o3")   or current_data["o3"]
+            for k in ["pm25", "pm10", "no2", "co", "so2", "o3"]:
+                if live.get(k) is not None:
+                    current_data[k] = live[k]
     except Exception:
         pass
 
@@ -244,4 +242,4 @@ async def smart_analysis(
         "rl_strategy":        rl_strategy,
         "active_alerts":      active_alerts,
         "analysis_timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
-    }
+    }

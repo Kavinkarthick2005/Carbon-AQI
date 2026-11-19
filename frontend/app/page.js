@@ -51,14 +51,22 @@ export default function Home() {
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await registerUser({
-          firebase_uid: userCredential.user.uid,
-          email: userCredential.user.email,
           display_name: userCredential.user.displayName || email.split('@')[0],
         });
       }
       router.push('/dashboard');
     } catch (error) {
-      setError(error.message);
+      if (error.code === 'auth/invalid-credential') {
+        setError("Invalid email or password. If you haven't registered yet, click 'Need an account? Sign up' below.");
+      } else if (error.code === 'auth/email-already-in-use') {
+        setError("An account with this email already exists. Click 'Already have an account? Sign in' below.");
+      } else if (error.code === 'auth/weak-password') {
+        setError("Password should be at least 6 characters.");
+      } else if (error.code === 'auth/invalid-email') {
+        setError("Please enter a valid email address.");
+      } else {
+        setError(error.message);
+      }
       console.error(error);
     } finally {
       setLoading(false);

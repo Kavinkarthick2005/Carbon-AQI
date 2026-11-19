@@ -1,8 +1,8 @@
-from sqlalchemy import Column, String, Float, Integer, Text, Boolean, ForeignKey, TIMESTAMP
+from sqlalchemy import Column, String, Float, Integer, Text, Boolean, ForeignKey, TIMESTAMP, JSON, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import text
 from sqlalchemy.orm import relationship
-from database import Base, engine
+from database import Base, engine, init_db as database_init_db
 
 # 1. Users Table
 class User(Base):
@@ -56,6 +56,22 @@ class AirQualityData(Base):
     o3 = Column(Float, nullable=True)
     aqi_score = Column(Float, nullable=True)
     recorded_at = Column(TIMESTAMP, server_default=text("NOW()"))
+    
+    # Milestone 1.6E-B: Provenance, calculation classification, and observation timestamps
+    observation_time = Column(TIMESTAMP(timezone=True), nullable=True)
+    ingested_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    data_source = Column(String(100), nullable=True)
+    calculation_type = Column(String(50), nullable=True)
+    calculation_formula = Column(String(50), nullable=True)
+    is_cpcb_compliant = Column(Boolean, nullable=True)
+    verification_status = Column(String(50), nullable=True)
+    averaging_period_status = Column(String(50), nullable=True)
+    averaging_periods = Column(JSON, nullable=True)
+    provenance = Column(JSON, nullable=True)
+
+    __table_args__ = (
+        Index("ix_air_quality_data_city_obs_time", "city_id", "observation_time"),
+    )
     
     # Relationships
     city = relationship("City", back_populates="air_quality_records")
@@ -162,6 +178,22 @@ class AQIHistory(Base):
     risk_level = Column(String(20), nullable=True)
     recorded_at = Column(TIMESTAMP, server_default=text("NOW()"))
     
+    # Milestone 1.6E-B: Provenance, calculation classification, and observation timestamps
+    observation_time = Column(TIMESTAMP(timezone=True), nullable=True)
+    ingested_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    data_source = Column(String(100), nullable=True)
+    calculation_type = Column(String(50), nullable=True)
+    calculation_formula = Column(String(50), nullable=True)
+    is_cpcb_compliant = Column(Boolean, nullable=True)
+    verification_status = Column(String(50), nullable=True)
+    averaging_period_status = Column(String(50), nullable=True)
+    averaging_periods = Column(JSON, nullable=True)
+    provenance = Column(JSON, nullable=True)
+
+    __table_args__ = (
+        Index("ix_aqi_history_city_obs_time", "city_id", "observation_time"),
+    )
+    
     # Relationships
     city = relationship("City")
 
@@ -197,5 +229,19 @@ class AlertNotification(Base):
     is_read         = Column(Boolean,     default=False, nullable=False)
 
 
-# Create all tables on startup
-Base.metadata.create_all(bind=engine)
+# 13. Translation Table — localized UI text strings
+class Translation(Base):
+    __tablename__ = "translations"
+
+    translation_id  = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
+    key_name        = Column(String(100), nullable=False, index=True)
+    language_code   = Column(String(10),  nullable=False, index=True)
+    translated_text = Column(Text,        nullable=False)
+    created_at      = Column(TIMESTAMP,   server_default=text("NOW()"))
+
+# Canonical init_db is defined in database.py; this is a thin wrapper for backward compatibility
+def init_db(target_engine=None):
+    """Thin wrapper delegating to canonical init_db in database.py."""
+    return database_init_db(target_engine=target_engine)
+
+
